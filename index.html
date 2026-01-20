@@ -584,6 +584,8 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
     let notePages = []; let currentNotePage = 0; const tagState = { editor: [], search: [], main: [] };
     const chartInstances = {};
 
+    let debounceTimer;
+
     function initSettings() {
         const isFirstRun = !localStorage.getItem('appInitialized');
         if (isFirstRun) {

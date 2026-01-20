@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>言念句子库</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @font-face {
+      font-family: 'UserCustomFont';
+      src: url('./fonts/myfont.ttf'); 
+      font-display: swap;
+    }
+
+    :root {
+      --accent: #2980b9; 
+      --bg: #f5f7fa; 
+      
+      --glass-alpha: 0.70; 
+      --glass-blur: 20px; 
+      
+      --card-bg: rgba(255, 255, 255, var(--glass-alpha));
+      --sidebar-bg: rgba(255, 255, 255, var(--glass-alpha));
+      
+      --text-main: #2c3e50;
+      --text-sec: #7f8c8d;
+      --text-label: #aeb6bf;
+      --text-value: #2c3e50;
+      --text-editor-label: #000000;
+      --primary: #34495e; 
+      --border: rgba(0,0,0,0.06); 
+      --danger: #c0392b;
+      --note-bg: rgba(0,0,0,0.03);
+      --scrollbar-track: transparent;
+      
+      --font-custom: 'UserCustomFont', "Segoe UI", sans-serif;
+      --font-serif: "Georgia", "Songti SC", "SimSun", serif;
+      
+      --slider-track: rgba(0,0,0,0.06);
+      --slider-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+      
+      --text-review: #000000;
+      --suggestion-bg: #ffffff;
+      
+      --tab-hover-bg: #ffffff;
+      --tab-hover-text: var(--accent);
+
+      /* 滚动条颜色变量 */
+      --scroll-thumb: rgba(127, 127, 127, 0.2);
+      --scroll-thumb-hover: rgba(127, 127, 127, 0.5);
+      
+      --code-inline-bg: #eee;
+      --code-inline-color: #000;
+      --code-block-bg: #1e1e1e;
+      --code-block-text: #ffffff;
+    }
+
+    body.dark-mode {
+      --bg: #121212;
+      --card-bg: rgba(30, 30, 30, var(--glass-alpha));
+      --sidebar-bg: rgba(20, 20, 20, var(--glass-alpha));
+      --text-main: #e0e0e0;
+      --text-sec: #999;
+      --text-label: #666;
+      --text-value: #ccc;
+      --text-editor-label: #bbbbbb;
+      --primary: #bb86fc; 
+      --border: rgba(255,255,255,0.08);
+      --note-bg: rgba(255,255,255,0.05);
+      
+      --slider-track: rgba(255,255,255,0.1);
+      --slider-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+      
+      --text-review: #e0e0e0;
+      --suggestion-bg: #252525;
+      
+      --tab-hover-bg: #333333;
+      --tab-hover-text: var(--text-main);
+
+      --scroll-thumb: rgba(255, 255, 255, 0.15);
+      --scroll-thumb-hover: rgba(255, 255, 255, 0.4);
+      
+      --code-inline-bg: #333;
+      --code-inline-color: #fff;
+    }
+
+    #app-background {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        z-index: -1;
+        background-color: var(--bg);
+        background-size: cover;
+        background-position: center;
+        transition: background-image 0.5s ease;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; transition: background 0.3s; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+
+    body { margin: 0; font-family: var(--font-custom); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; transition: color 0.3s; }
+    
+    input, textarea, select, button, label, .tag-pill, .q-meta-row, .q-date, .sidebar, .nav-btn, .result-count-bar, .q-content, .review-text {
+        font-family: var(--font-custom) !important;
+    }
+
+    * { box-sizing: border-box; outline: none; }
+    
+    .sidebar { width: 240px; background: var(--sidebar-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border-right: 1px solid var(--border); padding: 25px 0; display: flex; flex-direction: column; transition: background 0.3s; }
+    
+    .logo-container { text-align: center; margin: 0 25px 40px 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+    .logo-title { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; }
+    .logo-subtitle { font-size: 14px; color: var(--text-sec); font-family: var(--font-serif) !important; font-style: normal; opacity: 0.95; letter-spacing: 2px; margin-top: 5px; font-weight: 500; }
+    
+    .nav-btn { position: relative; background: transparent; border: none; color: var(--text-sec); padding: 14px 20px 14px 25px; text-align: left; font-size: 15px; cursor: pointer; margin-bottom: 4px; font-weight: normal; transition: 0.2s; width: auto; margin: 4px 20px; border: none; border-left: 5px solid transparent; border-radius: 4px; }
+    .nav-btn:hover { color: var(--text-main); background: rgba(127,127,127,0.05); }
+    .nav-btn.active { background: linear-gradient(90deg, rgba(127,127,127,0.08), transparent); color: var(--accent); font-weight: bold; border-left-color: var(--accent); border-top-left-radius: 2px; border-bottom-left-radius: 2px; }
+
+    .bottom-actions { margin: auto 25px 0 25px; border-top: 1px solid var(--border); padding-top: 15px; display: flex; align-items: center; justify-content: space-between; }
+    .settings-btn { background: transparent; border: none; cursor: pointer; color: var(--text-sec); padding: 8px; border-radius: 50%; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+    .settings-btn:hover { background: rgba(127,127,127,0.1); color: var(--accent); transform: rotate(90deg); }
+    .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+    /* --- Settings --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 1000; display: none; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
+    .modal-content { background: var(--bg); width: 400px; padding: 30px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text-main); max-height: 90vh; overflow-y: auto; }
+    .modal-content::-webkit-scrollbar { width: 4px; } 
+    .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 25px; color: var(--text-main); display: flex; justify-content: space-between; }
+    .modal-close { cursor: pointer; color: var(--text-sec); font-size: 24px; line-height: 1; }
+    .setting-item { margin-bottom: 25px; }
+    .setting-label { font-size: 13px; color: var(--text-sec); margin-bottom: 10px; display: block; font-weight: bold; }
+    .switch-row { display: flex; justify-content: space-between; align-items: center; }
+    .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
+    input[type="color"] { appearance: none; -webkit-appearance: none; border: none; width: 32px; height: 32px; padding: 0; border-radius: 50%; overflow: hidden; cursor: pointer; }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; }
+    .file-btn-group { display: flex; gap: 10px; width: 100%; }
+    .file-upload-label { flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text-main); transition: 0.2s; background: rgba(127,127,127,0.05); text-align: center; box-sizing: border-box; margin: 0; line-height: 1; }
+    .file-upload-label:hover { border-color: var(--accent); color: var(--accent); }
+    .range-slider { appearance: none; -webkit-appearance: none; width: 100%; height: 6px; background: var(--slider-track); box-shadow: var(--slider-shadow); border-radius: 3px; outline: none; margin: 10px 0; cursor: pointer; }
+    .range-slider:focus, .range-slider:active { outline: none; background: var(--slider-track) !important; }
+    .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; border: 1px solid rgba(0,0,0,0.05); margin-top: 0; }
+    .range-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+    .danger-btn { width: 100%; background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; cursor: pointer; margin-top: 10px; height: 38px; font-size: 13px;}
+    .danger-btn:hover { background: var(--danger); color: white; }
+    .theme-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* --- Main Area --- */
+    .main-area { flex: 1; padding: 0 50px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+    .view-section { display: none; max-width: 900px; margin: 0 auto; width: 100%; animation: fadeIn 0.4s ease; padding-bottom: 40px; }
+    #view-review { height: 100%; padding: 0 50px; } 
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- Search --- */
+    .search-wrapper { position: sticky; top: 0; padding: 40px 0 20px 0; z-index: 100; margin-bottom: 10px; transition: background 0.3s; background: transparent; }
+    .search-group { display: flex; gap: 0; background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); align-items: center; }
+    .search-select { width: 130px; flex-shrink: 0; border: none; outline: none; background-color: transparent; color: var(--text-main); font-size: 14px; padding: 0 15px; border-right: 1px solid var(--border); cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; height: 42px; }
+    .search-select option { background-color: var(--bg); color: var(--text-main); }
+    .search-select:hover { background-color: rgba(127,127,127,0.05); }
+    .icon-btn { padding: 0 20px; cursor: pointer; color: var(--accent); border: none; background: transparent; font-size: 13px; border-left: 1px solid var(--border); font-weight: 500; transition: background 0.2s; height: 42px; }
+    .icon-btn:hover { background-color: rgba(127,127,127,0.05); }
+    .reset-btn { color: var(--text-sec); font-size: 12px; }
+    .reset-btn:hover { color: var(--danger); }
+    .adv-panel { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); padding: 25px; border: 1px solid var(--border); border-radius: 12px; margin-top: 10px; display: none; grid-template-columns: 1fr 1fr 1fr; gap: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .adv-panel.open { display: grid; }
+    .adv-panel input { background: rgba(127,127,127,0.05); border: 1px solid var(--border); padding: 10px; border-radius: 6px; color: var(--text-main); width: 100%; font-family: inherit; }
+    .result-count-bar { font-size: 12px; color: var(--text-sec); margin-top: 5px; text-align: right; padding-right: 5px; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+    /* --- List --- */
+    .quote-list { display: flex; flex-direction: column; gap: 25px; }
+    .quote-card { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); padding: 35px 45px; border-radius: 12px; position: relative; transition: transform 0.2s, box-shadow 0.2s; border-left: 4px solid var(--accent); border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: pointer; }
+    .quote-card:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .q-content { font-size: 18px; line-height: 1.8; color: #000000 !important; white-space: pre-wrap; margin-bottom: 25px; font-weight: normal; letter-spacing: 0.5px; font-family: var(--font-custom) !important; } 
+    body.dark-mode .q-content { color: #ffffff !important; }
+    .q-meta-row { display: flex; gap: 25px; font-size: 13px; color: var(--text-main); border-top: 1px solid var(--border); padding-top: 15px; align-items: center; flex-wrap: wrap; }
+    .meta-group { display: inline-flex; align-items: center; gap: 6px; }
+    .meta-label { color: var(--text-label); font-size: 12px; font-weight: normal; }
+    .meta-value { color: var(--text-value); font-weight: normal; }
+    .clickable { cursor: pointer; transition: color 0.2s; border-bottom: 1px dotted transparent; }
+    .clickable:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    .q-note-block { margin-top: 20px; background: var(--note-bg); padding: 15px; border-radius: 8px; font-size: 14px; color: var(--text-sec); font-style: normal; border-left: 2px solid var(--border); display: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .q-note-label { font-weight: bold; margin-right: 5px; color: var(--text-main); opacity: 0.7; }
+    .q-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .q-tags-area { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag-pill { font-size: 12px; padding: 4px 12px; border-radius: 6px; letter-spacing: 0.5px; transition: 0.2s; cursor: pointer; }
+    .tag-pill:hover { opacity: 0.8; }
+    body.dark-mode .tag-pill { background-color: #333 !important; color: #ccc !important; border: 1px solid #444; }
+    .q-date { font-size: 12px; color: var(--text-sec); opacity: 0.5; }
+    .card-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; opacity: 0; transition: opacity 0.2s; }
+    .quote-card:hover .card-actions { opacity: 1; }
+    .action-btn { font-size: 12px; cursor: pointer; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-sec); padding: 4px 10px; border-radius: 4px; }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn.delete:hover { border-color: var(--danger); color: var(--danger); }
+
+    .tag-input-wrapper { border: none; background: transparent; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-height: 42px; cursor: text; transition: 0.2s; flex: 1; padding: 0 10px; }
+    .tag-chip-item { background-color: var(--accent); color: white; font-size: 12px; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px; animation: fadeIn 0.2s; white-space: nowrap; }
+    .tag-chip-close { cursor: pointer; font-weight: bold; opacity: 0.7; }
+    .tag-chip-close:hover { opacity: 1; }
+    .tag-transparent-input { background: transparent !important; border: none !important; outline: none; flex: 1; min-width: 80px; padding: 5px 0 !important; color: var(--text-main) !important; font-size: 14px; }
+    #view-editor .tag-input-wrapper, .adv-panel .tag-input-wrapper { border: 1px solid var(--border); background: rgba(127,127,127,0.05); border-radius: 6px; padding: 5px; }
+    #view-editor .tag-input-wrapper:focus-within { border-color: var(--accent); background: var(--bg); }
+
+    .form-group { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); padding: 40px; border-radius: 12px; border: 1px solid var(--border); margin-top: 40px; }
+    #view-editor { padding-bottom: 60px; }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; }
+    .field-wrap { position: relative; }
+    label { display: block; margin-bottom: 10px; font-size: 14px; font-weight: normal; color: var(--text-editor-label); letter-spacing: 0.5px; }
+    input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); background: rgba(127,127,127,0.05); color: var(--text-main); border-radius: 6px; font-size: 14px; transition: 0.2s; }
+    input:focus, textarea:focus { border-color: var(--accent); background: var(--bg); }
+    .save-btn { width: 100%; background: var(--accent); color: white; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 30px; letter-spacing: 1px; transition: background 0.3s; }
+    .save-btn:hover { opacity: 0.9; }
+
+    /* 修改点：Suggestion Box 增加滚动条支持，防止过长 */
+    .suggestion-box { 
+        position: absolute; top: 105%; left: 0; right: 0; 
+        background: var(--suggestion-bg); border: 1px solid var(--border); 
+        z-index: 50; border-radius: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
+        display: none; overflow-y: auto; max-height: 250px; /* 限制最大高度 */
+    }
+    .suggestion-item { padding: 10px 15px; cursor: pointer; font-size: 14px; border-bottom: 1px solid var(--border); }
+    .suggestion-item:hover { background: rgba(127,127,127,0.05); color: var(--accent); }
+
+    .cat-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; margin-top: 40px; }
+    .cat-tab { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border: 1px solid var(--border); color: var(--text-sec); padding: 8px 25px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .cat-tab:hover { background: var(--tab-hover-bg); border-color: var(--tab-hover-bg); color: var(--tab-hover-text); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .cat-tab.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .cat-card { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.2s; position: relative; display: flex; justify-content: space-between; align-items: center; }
+    .cat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); border-color: var(--accent); }
+    .cat-name { font-size: 16px; font-weight: bold; color: var(--text-main); }
+    .cat-count { font-size: 12px; color: var(--text-sec); background: rgba(127,127,127,0.1); padding: 4px 10px; border-radius: 12px; font-weight: 500;}
+
+    /* 结构图表卡片 */
+    .chart-card { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--border); border-radius: 12px; padding: 20px; min-height: 250px; display: flex; flex-direction: column; }
+    .chart-header { font-size: 14px; font-weight: bold; color: var(--text-sec); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .chart-container { flex: 1; position: relative; }
+    .internet-note { text-align: center; font-size: 12px; color: var(--text-sec); margin-bottom: 20px; opacity: 0.7; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+    .review-container { text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .review-glass-card { background: var(--card-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); padding: 50px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.05); max-width: 800px; width: 100%; margin-bottom: 40px; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27), opacity 0.3s; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    .card-switch-out { transform: scale(0.95); opacity: 0; }
+    .card-switch-in { transform: scale(1); opacity: 1; }
+    .review-content-scroll { overflow-y: auto; padding-right: 5px; }
+    .review-content-scroll::-webkit-scrollbar { display: block; width: 4px; }
+    .review-content-scroll::-webkit-scrollbar-thumb { background: rgba(127,127,127,0.2); border-radius: 2px; }
+    .review-text { font-size: 24px; margin-bottom: 20px; line-height: 1.6; padding: 0 20px; color: var(--text-review); font-weight: normal; font-family: var(--font-serif) !important; }
+    .review-translation { font-size: 16px; color: var(--text-sec); margin-bottom: 30px; padding: 0 20px; line-height: 1.5; font-family: var(--font-serif) !important; }
+    .review-meta { color: var(--text-sec); font-style: italic; font-size: 14px; font-family: var(--font-serif) !important; margin-bottom: 20px;}
+    .review-note-wrapper { background-color: rgba(127,127,127,0.05); border-radius: 8px; width: 100%; margin-top: 15px; display: none; text-align: left; position: relative; padding: 15px 20px 35px 20px; min-height: 80px; display: flex; flex-direction: column; transition: 0.3s; }
+    .review-note-title { font-size: 12px; color: var(--text-sec); margin-bottom: 10px; font-weight: bold; letter-spacing: 1px; }
+    .review-note-content { font-size: 15px; color: var(--text-review); line-height: 1.6; flex: 1; word-wrap: break-word; white-space: pre-wrap; animation: fadeIn 0.3s; }
+    .pagination-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(127,127,127,0.3); cursor: pointer; transition: 0.2s; }
+    .dot.active { background: var(--accent); transform: scale(1.3); }
+    .review-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    .review-glass-card:not(.initial-state):hover .review-actions { opacity: 1; pointer-events: auto; }
+    .review-icon-btn { background: transparent; border: none; cursor: pointer; color: var(--text-sec); padding: 5px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+    .review-icon-btn:hover { background: rgba(127,127,127,0.1); color: var(--accent); }
+    .review-icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    
+    .img-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); backdrop-filter: blur(5px); justify-content: center; align-items: center; animation: fadeIn 0.2s; }
+    .img-modal-content { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); object-fit: contain; }
+
+    /* --- Help & About Page Styles --- */
+    #view-help, #view-about, #view-readme, #view-structure { padding-top: 40px; padding-bottom: 60px; }
+    
+    .help-card, .about-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        color: var(--text-main);
+        line-height: 1.8;
+    }
+    
+    .help-card h3, .about-card h3 { margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; font-size: 18px; color: var(--accent); }
+    .help-card h3:first-child, .about-card h3:first-child { margin-top: 0; }
+    .help-card h4 { margin-top: 20px; margin-bottom: 10px; font-size: 15px; color: var(--text-main); }
+    .help-card ul, .help-card ol { padding-left: 20px; margin-bottom: 15px; }
+    .help-card li { margin-bottom: 8px; font-size: 14px; color: var(--text-sec); }
+    .help-card strong { color: var(--text-main); font-weight: bold; }
+    
+    .help-card code { 
+        background: var(--code-inline-bg); 
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        font-family: Consolas, Monaco, monospace; 
+        font-size: 13px; 
+        color: var(--code-inline-color); 
+        font-weight: bold;
+    }
+    
+    .code-wrapper pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        font-weight: normal;
+        border-radius: 0;
+    }
+    
+    .help-example-wrong { color: var(--danger); font-style: italic; margin-right: 5px; }
+    .help-example-right { color: #27ae60; font-style: italic; margin-right: 5px; }
+
+    .code-wrapper {
+        position: relative;
+        margin: 15px 0;
+        background: var(--code-block-bg);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .code-wrapper pre {
+        margin: 0;
+        padding: 15px;
+        overflow-x: auto;
+        color: var(--code-block-text);
+        font-family: Consolas, Monaco, monospace;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .copy-code-btn {
+        position: absolute; top: 8px; right: 8px;
+        background: rgba(255,255,255,0.1); border: none; cursor: pointer; color: rgba(255,255,255,0.7);
+        padding: 6px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .copy-code-btn:hover { background: var(--accent); color: white; }
+    .copy-code-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    .about-card p { font-size: 14px; color: var(--text-sec); margin-bottom: 20px; line-height: 1.8; text-align: justify; }
+    .qr-container { display: flex; gap: 40px; margin-top: 40px; flex-wrap: wrap; justify-content: center; }
+    .qr-item { text-align: center; }
+    .qr-item img { width: 180px; border-radius: 12px; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; cursor: zoom-in; }
+    .qr-item img:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+    
+    /* 回到顶部按钮 */
+    .back-to-top {
+        position: fixed; bottom: 30px; right: 30px;
+        width: 45px; height: 45px; border-radius: 50%;
+        background: var(--card-bg); border: 1px solid var(--border);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        color: var(--accent);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; opacity: 0; pointer-events: none;
+        transition: 0.3s; z-index: 900;
+        backdrop-filter: blur(var(--glass-blur));
+    }
+    .back-to-top.visible { opacity: 1; pointer-events: auto; }
+    .back-to-top:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+    
+  </style>
+</head>
+<body>
+
+  <div id="app-background"></div>
+
+  <div class="sidebar">
+    <div class="logo-container">
+        <div class="logo-title">言念句子库</div>
+        <div class="logo-subtitle">言念君子，温其如玉</div>
+    </div>
+    
+    <button class="nav-btn active" onclick="switchView('library')">全部馆藏</button>
+    <button class="nav-btn" onclick="switchView('categories')">分类索引</button>
+    <button class="nav-btn" onclick="switchView('structure')">句子结构</button>
+    <button class="nav-btn" onclick="startEdit(null)">新建录入</button>
+    <button class="nav-btn" onclick="switchView('review')">漫游文字</button>
+    <button class="nav-btn" onclick="switchView('help')">导入导出帮助</button>
+    <button class="nav-btn" onclick="switchView('readme')">软件说明</button>
+    <button class="nav-btn" onclick="switchView('about')">关于作者</button>
+    
+    <div style="margin-top: auto;">
+        <div class="bottom-actions">
+            <button class="settings-btn" onclick="toggleSettingsModal()" title="设置">
+                <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay" onclick="if(event.target===this) toggleSettingsModal()">
+      <div class="modal-content">
+          <div class="modal-header"><span>设置</span><span class="modal-close" onclick="toggleSettingsModal()">×</span></div>
+          <div class="setting-item"><span class="setting-label">显示模式</span><div class="switch-row"><span style="font-size:13px; color:var(--text-sec)">黑夜模式</span><label class="theme-switch"><input type="checkbox" id="theme-toggle" onchange="toggleTheme()"><span class="slider"></span></label></div></div>
+          <div class="setting-item"><span class="setting-label">毛玻璃效果调整</span><div style="margin-bottom: 15px;"><div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sec); margin-bottom:5px;"><span>不透明度</span><span id="alpha-val">70%</span></div><input type="range" min="10" max="100" value="70" class="range-slider" id="alpha-slider" oninput="updateGlassAlpha(this.value)"></div><div><div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sec); margin-bottom:5px;"><span>模糊度</span><span id="blur-val">20px</span></div><input type="range" min="0" max="50" value="20" class="range-slider" id="blur-slider" oninput="updateGlassBlur(this.value)"></div></div>
+          <div class="setting-item"><span class="setting-label">主题强调色</span><div class="color-picker-wrapper"><input type="color" id="accent-picker" oninput="applyAccent(this.value)" value="#2980b9"><span style="font-size:12px; color:var(--text-sec)">点击选择颜色</span></div></div>
+          <div class="setting-item"><span class="setting-label">背景图片</span><input type="file" id="bg-upload" accept="image/*" style="display:none" onchange="handleBgUpload(this)"><div class="file-btn-group"><label for="bg-upload" class="file-upload-label">更换背景</label><button class="file-upload-label" onclick="clearBackground()">清除背景</button></div></div>
+          <div class="setting-item" style="padding-top:10px; margin-top:10px;"><span class="setting-label">数据管理</span><div class="file-btn-group" style="margin-bottom:10px;"><button class="file-upload-label" onclick="api.importData()">导入 CSV</button><button class="file-upload-label" onclick="api.exportData()">导出 CSV</button></div><button class="danger-btn" onclick="clearAllData()">清空所有数据</button></div>
+      </div>
+  </div>
+
+  <div class="main-area">
+    <div id="view-library" class="view-section active">
+      <div class="search-wrapper">
+        <div class="search-group">
+          <select id="search-type" class="search-select"><option value="fulltext">全文搜索</option><option value="type">按类型</option><option value="author">按作者</option><option value="source">按出处</option><option value="dynasty">按朝代</option><option value="nationality">按国籍</option><option value="tags">按标签</option></select>
+          <div class="tag-input-wrapper" id="main-search-wrapper" onclick="document.getElementById('main-search-input').focus()">
+              <div id="tag-list-main" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+              <input type="text" id="main-search-input" class="tag-transparent-input" placeholder="输入关键词 (可回车生成标签)" onkeydown="handleTagInput(event, 'main')" oninput="handleSearch()">
+          </div>
+          <button class="icon-btn reset-btn" onclick="resetSearch()">重置</button>
+          <button class="icon-btn adv-btn" onclick="toggleAdvSearch()">高级</button>
+        </div>
+        <div class="result-count-bar" id="result-count">加载中...</div>
+        <div id="adv-panel" class="adv-panel">
+            <input id="adv-content" placeholder="内容包含..." class="search-input">
+            <input id="adv-author" placeholder="作者" class="search-input">
+            <input id="adv-type" placeholder="类型" class="search-input">
+            <input id="adv-source" placeholder="出处" class="search-input">
+            <input id="adv-dynasty" placeholder="朝代" class="search-input">
+            <input id="adv-nationality" placeholder="国籍" class="search-input">
+            <div class="tag-input-wrapper" style="grid-column: span 3; background: rgba(127,127,127,0.05);" onclick="document.getElementById('adv-tag-input').focus()"><div id="tag-list-search" style="display:flex; flex-wrap:wrap; gap:5px;"></div><input id="adv-tag-input" class="tag-transparent-input" placeholder="标签 (回车添加)" onkeydown="handleTagInput(event, 'search')"></div>
+            <input type="hidden" id="adv-tags">
+            <button class="save-btn" style="grid-column: span 3; margin-top:0" onclick="doAdvSearch()">执行组合搜索</button>
+        </div>
+      </div>
+      <div id="quote-list" class="quote-list"></div>
+    </div>
+
+    <div id="view-categories" class="view-section">
+        <div class="cat-tabs">
+            <button class="cat-tab active" onclick="loadCategory('author', this)">作者</button>
+            <button class="cat-tab" onclick="loadCategory('type', this)">类型</button>
+            <button class="cat-tab" onclick="loadCategory('source', this)">出处</button>
+            <button class="cat-tab" onclick="loadCategory('dynasty', this)">朝代</button>
+            <button class="cat-tab" onclick="loadCategory('nationality', this)">国籍</button>
+            <button class="cat-tab" onclick="loadCategory('tags', this)">标签</button>
+        </div>
+        <div id="cat-grid" class="cat-grid"></div>
+    </div>
+
+    <div id="view-structure" class="view-section">
+        <div class="internet-note">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-1.07 3.97-2.9 5.4z"/></svg>
+            本页面图表功能需要连接互联网加载组件
+        </div>
+        <div class="cat-grid">
+            <div class="chart-card"><div class="chart-header">作者分布</div><div class="chart-container"><canvas id="chart-author"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header">类型分布</div><div class="chart-container"><canvas id="chart-type"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header">朝代分布</div><div class="chart-container"><canvas id="chart-dynasty"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header">国籍分布</div><div class="chart-container"><canvas id="chart-nationality"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header">出处分布</div><div class="chart-container"><canvas id="chart-source"></canvas></div></div>
+            <div class="chart-card"><div class="chart-header">标签云</div><div class="chart-container"><canvas id="chart-tags"></canvas></div></div>
+        </div>
+    </div>
+
+    <div id="view-editor" class="view-section">
+      <div class="form-group">
+        <h2 id="form-title" style="margin-top:0; font-weight:normal; font-size:18px; margin-bottom:30px; border-left:3px solid var(--accent); padding-left:10px;">新建录入</h2>
+        <input type="hidden" id="inp-id">
+        <label>句子内容</label>
+        <div class="field-wrap">
+            <textarea id="inp-content" style="height:120px; margin-bottom:20px;" placeholder="输入你喜欢的句子吧~" oninput="handleContentInput(this)"></textarea>
+            <div class="suggestion-box"></div>
+            <div id="dup-warning" style="color:var(--danger); font-size:12px; display:none; margin-bottom:20px;">该内容已存在于库中</div>
+        </div>
+
+        <div class="input-row"><div class="field-wrap"><label>作者</label><input id="inp-author" onkeydown="handleEnter(event, 'inp-type')" oninput="showSuggestions('author', this)" onblur="hideSuggestions()"><div class="suggestion-box"></div></div><div class="field-wrap"><label>类型</label><input id="inp-type" onkeydown="handleEnter(event, 'inp-source')" oninput="showSuggestions('type', this)" onblur="hideSuggestions()"><div class="suggestion-box"></div></div></div>
+        <div class="input-row"><div class="field-wrap"><label>出处</label><input id="inp-source" onkeydown="handleEnter(event, 'inp-dynasty')" oninput="showSuggestions('source', this)" onblur="hideSuggestions()"><div class="suggestion-box"></div></div><div class="field-wrap"><label>朝代</label><input id="inp-dynasty" onkeydown="handleEnter(event, 'inp-nationality')" oninput="showSuggestions('dynasty', this)" onblur="hideSuggestions()"><div class="suggestion-box"></div></div></div>
+        <div class="input-row"><div class="field-wrap"><label>国籍</label><input id="inp-nationality" onkeydown="handleEnter(event, 'inp-translation')" oninput="showSuggestions('nationality', this)" onblur="hideSuggestions()"><div class="suggestion-box"></div></div><div class="field-wrap"><label>翻译</label><input id="inp-translation" onkeydown="handleEnter(event, 'tag-input-editor')"></div></div>
+        <div class="field-wrap" style="margin-bottom: 25px;"><label>标签</label><div class="tag-input-wrapper" onclick="document.getElementById('tag-input-editor').focus()"><div id="tag-list-editor" style="display:flex; flex-wrap:wrap; gap:5px;"></div><input id="tag-input-editor" class="tag-transparent-input" placeholder="输入并回车生成标签..." onkeydown="handleTagInput(event, 'editor')" onblur="hideSuggestions()"></div><div class="suggestion-box"></div><input type="hidden" id="inp-tags"></div>
+        <div class="field-wrap"><label>备注 (随记)</label><textarea id="inp-note" style="height:80px; font-style:normal; color:var(--text-main);" placeholder="写点什么..."></textarea></div>
+        <button class="save-btn" onclick="saveQuote()">保存</button><button class="save-btn" style="background:transparent; color:var(--text-sec); border:1px solid var(--border); margin-top:10px;" onclick="resetForm()">重置</button>
+      </div>
+    </div>
+
+    <div id="view-review" class="view-section">
+      <div class="review-container">
+         <div id="glass-card" class="review-glass-card initial-state">
+             <div class="review-actions">
+                 <button class="review-icon-btn" onclick="editReviewQuote()" title="编辑"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+                 <button class="review-icon-btn" onclick="copyReviewQuote()" title="复制"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+             </div>
+             
+             <div class="review-content-scroll">
+                 <div id="rev-content" class="review-text">准备好开始漫游了吗</div>
+                 <div id="rev-translation" class="review-translation"></div>
+                 <div id="rev-meta" class="review-meta"></div>
+             </div>
+             <div id="rev-note-wrapper" class="review-note-wrapper" style="display:none"><div class="review-note-title">随记</div><div id="rev-note-content" class="review-note-content"></div><div id="pagination-dots" class="pagination-dots"></div></div>
+         </div>
+         <button class="save-btn" style="width: auto; padding: 12px 50px; border-radius: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);" onclick="doReview()">漫游一句</button>
+      </div>
+    </div>
+
+    <div id="view-help" class="view-section">
+        <div class="help-card">
+            <h3>一、文件格式</h3>
+            <ul><li>文件格式：后缀名为 <code>.csv</code> 的文件</li><li>文件编码：<strong>UTF-8</strong></li></ul>
+            <h3>二、填写 CSV 的注意事项</h3>
+            <p>为了保证数据能被软件正确识别，填写时请遵循以下规则：</p>
+            <h4>1. 必须保留英文表头</h4>
+            <p>第一行必须是以下内容（拼写不能错）：</p>
+            <code>Content,Author,Type,Source,Dynasty,Nationality,Tags,Note,Translation,CreatedAt</code>
+            <h4>2. 标点符号的处理</h4>
+            <p>CSV 的原理是用逗号 <code>,</code> 分隔列。</p>
+            <ul>
+                <li>如果内容里包含英文逗号 <code>,</code>，必须用英文双引号 <code>"</code> 包裹。</li>
+                <li><span class="help-example-wrong">错误：</span> <code>Hello, world, 佚名</code></li>
+                <li><span class="help-example-right">正确：</span> <code>"Hello, world", 佚名</code></li>
+            </ul>
+            <h4>3. 标签与时间</h4>
+            <p>标签用逗号分隔。时间建议格式：<code>2023-10-01 12:00:00</code></p>
+            <h3>三、 标准模版示例</h3>
+            <div class="code-wrapper">
+                <button class="copy-code-btn" onclick="copyCode(this)" title="复制"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+                <pre><code>Content,Author,Type,Source,Dynasty,Nationality,Tags,Note,Translation,CreatedAt
+"人生若只如初见，何事秋风悲画扇。",纳兰性德,诗词,木兰花·拟古决绝词柬友,清代,中国,爱情,很喜欢的一句,If time could stop at the moment we first met.,2023-01-01 10:00:00
+To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英国,哲学，经典,,生存还是毁灭，这是一个问题</code></pre>
+            </div>
+            <h3>四、乱码解决办法</h3>
+            <p>请使用记事本打开 CSV，选择“另存为”，将底部编码改为 <strong>UTF-8</strong> 即可。</p>
+        </div>
+    </div>
+    
+    <div id="view-readme" class="view-section">
+        <div class="help-card">
+            <h3>软件定位</h3>
+            <p>一款优美句子收藏摘录软件，使用户可以持久存储自己喜欢的句子，并支持多种搜索模式。</p>
+            <h3>软件功能</h3>
+            <ul>
+                <li><strong>本地化、持久化存储</strong>：数据存储在本地，安全无忧。</li>
+                <li><strong>多维标签管理</strong>：支持为句子打上多个标签，灵活检索。</li>
+                <li><strong>强大的搜索</strong>：支持全文、作者、标签等多种组合搜索。</li>
+                <li><strong>数据可视化</strong>：直观展示句子库的组成结构。</li>
+            </ul>
+            <h3>版本历史</h3>
+            <ul>
+                <li>2026 年 1 月 20 日    1.0 版本上线</li>
+                <li>2026 年 1 月 20 日    1.0.1 版本增加了软件启动加载动画</li>
+            </ul>
+            <h3>兼容性说明</h3>
+            <p>支持 Windows、Linux、Mac 平台。</p>
+            <h3>许可证信息</h3>
+            <p>MIT License 开源协议。</p>
+            <h3>致谢</h3>
+            <p>感谢所有在软件实现过程中为我提出设计灵感的人：Frankiefrq，君，y77, zn，zyc（按首字母顺序）。</p>
+            <p>以及，感谢老己。</p>
+        </div>
+    </div>
+
+    <div id="view-about" class="view-section">
+        <div class="about-card">
+            <h3>为什么要制作这款软件？</h3>
+            <p>其实从高中时就想写这个软件。</p>
+            <p>一直以来，我看到优美的句子就停不下脚步：看到优美的古诗词，想记下来；看到精彩的比喻句，想记下来；看到别人写的特别生动真切，还是想保存下来以后继续看……不知不觉，各个 app 里的收藏夹里就堆满了一堆句子。但是当我真的想用的时候，我总不能再一个个从这些 app 里找吧？所以我就想要一个句子管理软件，帮我收藏这些句子。</p>
+            <p>首先我有几个重要的需求：第一，我需要让所有的句子能在一个地方存储，而不需要我去东翻一个 app，西翻一个 app。第二，我需要给每个句子打上标签，来标注这个句子是关于什么的，又或者这个句子表达的是什么感情。这样当我搜索时，比如说我搜“开心”，那么就会蹦出来一堆开心的句子，当我搜“友情”，那就会蹦出来一堆关于友情的句子。而不是我必须想到原文才能去搜出来这些句子。</p>
+            <p>第三，我希望这些句子可以聚合在一起，我可以清晰看到我的句子库的组织结构。比如说句子库中苏东坡有多少句，中文句子有多少句，英文句子有多少句，各个世界名著的句子又分别有多少句……这样我可以清晰的看出来哪个作家的句子我收藏的最多，哪本书的句子我收藏的更多。</p>
+            <p>为此我尝试了很多方案：手机备忘录吧，存储量太小，搜也不好搜；Excel 吧，界面的交互太差，而且界面不美观；Obsidian 等笔记软件呢，也是无法满足我的需求。我很惊奇的发现，市面上好像并没有这样一款能实现我的需求的软件，那只好自己写。</p>
+            <p>于是，这款软件诞生了。</p>
+
+            <h3>关于我？</h3>
+            <p>我的邮箱： yuhang.shang@qq.com<br>
+            我的微信：Syhang215<br>
+            我的 github：tlxxsyh<br>
+            如果有问题欢迎与我联系~</p>
+
+            <h3>请我喝杯咖啡</h3>
+            <p>如果你认为这款软件对你有用的话，欢迎你请我喝杯咖啡~<br>
+            可以当作是为这个点子提供一份赞赏，或者是当作我熬夜写出这份软件的慰藉。</p>
+
+            <div class="qr-container">
+                <div class="qr-item"><img src="./assets/zfb.jpg" alt="支付宝收款码" onclick="openImageModal(this.src)"></div>
+                <div class="qr-item"><img src="./assets/wx.png" alt="微信收款码" onclick="openImageModal(this.src)"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="img-modal" class="img-modal" onclick="closeImageModal()">
+        <img class="img-modal-content" id="img-modal-target">
+    </div>
+    
+    <button id="back-to-top" class="back-to-top" onclick="scrollToTop()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </button>
+
+  </div>
+
+  <script>
+    let notePages = []; let currentNotePage = 0; const tagState = { editor: [], search: [], main: [] };
+    const chartInstances = {};
+
+    function initSettings() {
+        const isFirstRun = !localStorage.getItem('appInitialized');
+        if (isFirstRun) {
+            localStorage.setItem('themeAccent', '#42bcff');
+            localStorage.setItem('glassAlpha', 0.88);
+            localStorage.setItem('glassBlur', 1);
+            localStorage.setItem('appInitialized', 'true');
+        }
+
+        const isDark = localStorage.getItem('themeMode') === 'dark'; if(isDark) { document.body.classList.add('dark-mode'); document.getElementById('theme-toggle').checked = true; }
+        const accent = localStorage.getItem('themeAccent') || '#2980b9'; applyAccent(accent); document.getElementById('accent-picker').value = accent;
+        const bgData = localStorage.getItem('bgImage'); if(bgData) document.getElementById('app-background').style.backgroundImage = `url(${bgData})`;
+        const savedAlpha = localStorage.getItem('glassAlpha') || 0.7; const savedBlur = localStorage.getItem('glassBlur') || 20;
+        document.getElementById('alpha-slider').value = savedAlpha * 100; document.getElementById('blur-slider').value = savedBlur;
+        updateGlassAlpha(savedAlpha * 100); updateGlassBlur(savedBlur);
+    }
+    
+    function updateGlassAlpha(val) { document.documentElement.style.setProperty('--glass-alpha', val/100); document.getElementById('alpha-val').innerText = val + '%'; localStorage.setItem('glassAlpha', val/100); }
+    function updateGlassBlur(val) { document.documentElement.style.setProperty('--glass-blur', val + 'px'); document.getElementById('blur-val').innerText = val + 'px'; localStorage.setItem('glassBlur', val); }
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('themeMode', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(document.getElementById('view-structure').classList.contains('active')) loadStructure(); }
+    function applyAccent(color) { document.documentElement.style.setProperty('--accent', color); localStorage.setItem('themeAccent', color); if(document.getElementById('view-structure').classList.contains('active')) loadStructure(); }
+    function handleBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { const data = e.target.result; document.getElementById('app-background').style.backgroundImage = `url(${data})`; localStorage.setItem('bgImage', data); }; reader.readAsDataURL(input.files[0]); } }
+    function clearBackground() { document.getElementById('app-background').style.backgroundImage = ''; localStorage.removeItem('bgImage'); }
+    function toggleSettingsModal() { const modal = document.getElementById('settings-modal'); modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex'; }
+    async function clearAllData() { if(confirm("确定要清空所有句子吗？此操作不可恢复！")) { await window.api.clearAllData(); alert("已清空所有数据。"); loadQuotes(); toggleSettingsModal(); } }
+    function stringToColorStyle(str) { let hash = 0; for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); } const h = Math.abs(hash) % 360; return { bg: `hsl(${h}, 50%, 92%)`, text: `hsl(${h}, 40%, 30%)` }; }
+
+    function switchView(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      const target = viewName === 'editor' ? 'editor' : (viewName === 'categories' ? 'categories' : (viewName === 'help' ? 'help' : (viewName === 'about' ? 'about' : (viewName === 'readme' ? 'readme' : (viewName === 'structure' ? 'structure' : viewName)))));
+      document.getElementById('view-' + target).classList.add('active');
+      const idx = {'library':0, 'categories':1, 'structure':2, 'editor':3, 'review':4, 'help':5, 'readme':6, 'about':7}[viewName]; 
+      if(idx!==undefined) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+      
+      if(viewName === 'library') loadQuotes(); 
+      if(viewName === 'categories') loadCategory('author', document.querySelector('.cat-tab'));
+      if(viewName === 'structure') loadStructure();
+      
+      document.querySelector('.main-area').scrollTop = 0;
+    }
+    
+    async function loadStructure() {
+        const fields = ['author', 'type', 'source', 'dynasty', 'nationality', 'tags'];
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#e0e0e0' : '#2c3e50';
+        
+        for (const field of fields) {
+            const data = await window.api.getCategoryStats(field);
+            let labels = [], counts = [];
+            if (data.length > 0) {
+                const topN = 5;
+                labels = data.slice(0, topN).map(i => i.name);
+                counts = data.slice(0, topN).map(i => i.count);
+                const otherCount = data.slice(topN).reduce((sum, i) => sum + i.count, 0);
+                if (otherCount > 0) { labels.push('其他'); counts.push(otherCount); }
+            } else { labels = ['暂无数据']; counts = [0]; }
+
+            const ctx = document.getElementById('chart-' + field).getContext('2d');
+            if (chartInstances[field]) chartInstances[field].destroy();
+            
+            if (data.length === 0) {
+                chartInstances[field] = { destroy: () => {} }; 
+                const canvas = document.getElementById('chart-' + field);
+                canvas.style.display = 'none';
+                let msg = canvas.parentElement.querySelector('.no-data-msg');
+                if(!msg) {
+                    msg = document.createElement('div'); msg.className = 'no-data-msg';
+                    msg.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-sec);font-size:14px;";
+                    msg.innerText = "暂无数据"; canvas.parentElement.appendChild(msg);
+                }
+                continue;
+            } else {
+                const canvas = document.getElementById('chart-' + field); canvas.style.display = 'block';
+                const msg = canvas.parentElement.querySelector('.no-data-msg'); if(msg) msg.remove();
+            }
+
+            chartInstances[field] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: ['rgba(41, 128, 185, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(26, 188, 156, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)', 'rgba(149, 165, 166, 0.7)'],
+                        borderColor: isDark ? '#2d2d2d' : '#ffffff', borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: textColor, boxWidth: 12, padding: 15 } } },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+        }
+    }
+
+    async function loadQuotes() { const quotes = await window.api.getQuotes(); renderList(quotes); }
+    async function loadCategory(field, tabEl) {
+        if(tabEl) { document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active')); tabEl.classList.add('active'); }
+        const data = await window.api.getCategoryStats(field); const grid = document.getElementById('cat-grid');
+        if (data.length === 0) { grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-sec); padding:20px;">暂无数据</div>`; return; }
+        grid.innerHTML = data.map(item => `<div class="cat-card" onclick="jumpToSearch('${field}', '${escapeAttr(item.name)}')"><div class="cat-name">${item.name}</div><div class="cat-count">${item.count} 首</div></div>`).join('');
+    }
+    function jumpToSearch(field, value) {
+        switchView('library'); resetSearchUI();
+        if (field === 'tags') { document.getElementById('search-type').value = 'tags'; tagState.main = [value]; renderTags('main'); }
+        else {
+            const select = document.getElementById('search-type'); let found = false; for(let i=0; i<select.options.length; i++) { if(select.options[i].value === field) { select.selectedIndex = i; found = true; break; } }
+            if(!found) select.value = 'fulltext'; document.getElementById('main-search-input').value = value;
+        }
+        handleSearch();
+    }
+    function escapeAttr(str) { if (!str) return ''; return str.toString().replace(/'/g, "\\'"); }
+    function quickFilter(field, value, event) {
+        if (!value) return; if(event) event.stopPropagation(); resetSearchUI();
+        if (field === 'tags') { document.getElementById('search-type').value = 'tags'; tagState.main = [value]; renderTags('main'); }
+        else { const select = document.getElementById('search-type'); if ([...select.options].some(o => o.value === field)) { select.value = field; document.getElementById('main-search-input').value = value; } }
+        handleSearch(); document.querySelector('.main-area').scrollTop = 0;
+    }
+    function openInReview(id) { currentRandomId = id; switchView('review'); window.api.getQuotes().then(quotes => { const q = quotes.find(item => item.id === id); if(q) renderReviewCard(q); }); }
+    function paginateNote(text) {
+        const limit = 60; const pages = []; let remaining = text;
+        while (remaining.length > 0) {
+            if (remaining.length <= limit) { pages.push(remaining); break; }
+            let breakPoint = remaining.lastIndexOf('。', limit);
+            if (breakPoint === -1) breakPoint = remaining.lastIndexOf('！', limit); if (breakPoint === -1) breakPoint = remaining.lastIndexOf('？', limit); if (breakPoint === -1) breakPoint = remaining.lastIndexOf('\n', limit); if (breakPoint === -1) breakPoint = remaining.lastIndexOf('，', limit); if (breakPoint === -1) breakPoint = remaining.lastIndexOf(' ', limit);
+            if (breakPoint === -1 || breakPoint < limit * 0.5) breakPoint = limit; else breakPoint += 1;
+            pages.push(remaining.substring(0, breakPoint)); remaining = remaining.substring(breakPoint);
+        } return pages;
+    }
+    function renderReviewCard(q) {
+        const card = document.getElementById('glass-card'); const noteWrapper = document.getElementById('rev-note-wrapper'); const transDiv = document.getElementById('rev-translation'); 
+        card.classList.add('card-switch-out');
+        card.classList.remove('initial-state');
+        setTimeout(() => {
+            document.getElementById('rev-content').innerText = q.content; document.getElementById('rev-meta').innerText = `— ${q.author || ''} ${q.source ? '《'+q.source+'》' : ''}`;
+            if (q.translation && q.translation.trim() !== '') { transDiv.innerText = q.translation; transDiv.style.display = 'block'; } else transDiv.style.display = 'none';
+            if (q.note && q.note.trim() !== '') { noteWrapper.style.display = 'flex'; notePages = paginateNote(q.note); currentNotePage = 0; updateNotePage(); } else { noteWrapper.style.display = 'none'; }
+            card.classList.remove('card-switch-out'); card.classList.add('card-switch-in'); setTimeout(() => card.classList.remove('card-switch-in'), 300);
+        }, 200);
+    }
+    function updateNotePage() {
+        const noteContent = document.getElementById('rev-note-content'); const dotsContainer = document.getElementById('pagination-dots');
+        noteContent.style.opacity = 0; setTimeout(() => { noteContent.innerText = notePages[currentNotePage]; noteContent.style.opacity = 1; }, 100);
+        if (notePages.length > 1) { dotsContainer.innerHTML = notePages.map((_, idx) => `<div class="dot ${idx === currentNotePage ? 'active' : ''}" onclick="changeNotePage(${idx})"></div>`).join(''); } else { dotsContainer.innerHTML = ''; }
+    }
+    function changeNotePage(idx) { currentNotePage = idx; updateNotePage(); }
+    
+    function copyReviewQuote() {
+        const text = document.getElementById('rev-content').innerText;
+        const meta = document.getElementById('rev-meta').innerText;
+        if(text && text !== "准备好开始漫游了吗") {
+            navigator.clipboard.writeText(`${text}\n${meta}`);
+            const btn = event.currentTarget; const originalColor = btn.style.color;
+            btn.style.color = "var(--accent)"; setTimeout(() => btn.style.color = originalColor, 500);
+        }
+    }
+    function editReviewQuote() { if(currentRandomId) { startEdit(currentRandomId); } }
+    
+    function copyCode(btn) {
+        const pre = btn.nextElementSibling;
+        const code = pre.querySelector('code').innerText;
+        navigator.clipboard.writeText(code);
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+        setTimeout(() => { btn.innerHTML = originalIcon; }, 1500);
+    }
+
+    function openImageModal(src) {
+        const modal = document.getElementById('img-modal');
+        const img = document.getElementById('img-modal-target');
+        img.src = src;
+        modal.style.display = "flex";
+    }
+    function closeImageModal() {
+        document.getElementById('img-modal').style.display = "none";
+    }
+
+    function renderTags(context) {
+        const listId = (context === 'editor') ? 'tag-list-editor' : (context === 'search' ? 'tag-list-search' : 'tag-list-main');
+        const hiddenId = (context === 'editor') ? 'inp-tags' : (context === 'search' ? 'adv-tags' : null);
+        const listEl = document.getElementById(listId); if(!listEl) return; 
+        listEl.innerHTML = tagState[context].map((tag, idx) => `<div class="tag-chip-item">${tag}<span class="tag-chip-close" onclick="removeTag('${context}', ${idx})">×</span></div>`).join('');
+        if (hiddenId) document.getElementById(hiddenId).value = tagState[context].join(',');
+        if (context === 'main') handleSearch();
+    }
+    function handleTagInput(e, context) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); const input = e.target; const val = input.value.trim();
+            if (val) {
+                const newTags = val.split(/[,，]/).map(t => t.trim()).filter(t => t);
+                newTags.forEach(t => { if (!tagState[context].includes(t)) tagState[context].push(t); });
+                renderTags(context); input.value = '';
+            } else { if (context === 'editor') document.getElementById('inp-note').focus(); }
+        } else if (e.key === 'Backspace' && e.target.value === '' && tagState[context].length > 0) {
+            tagState[context].pop(); renderTags(context);
+        }
+    }
+    window.removeTag = function(context, idx) {
+        tagState[context].splice(idx, 1); renderTags(context);
+        let inputId = 'tag-input-editor'; if (context === 'search') inputId = 'adv-tag-input'; if (context === 'main') inputId = 'main-search-input';
+        document.getElementById(inputId).focus();
+    };
+
+    // 新增：handleContentInput (5字触发联想)
+    let contentDebounce;
+    function handleContentInput(input) {
+        const val = input.value;
+        checkDuplicate(val); // 查重逻辑保持不变
+        
+        clearTimeout(contentDebounce);
+        if (val.length >= 5) {
+            contentDebounce = setTimeout(() => {
+                showSuggestions('content', input);
+            }, 300);
+        } else {
+            // 隐藏建议框
+            const box = input.nextElementSibling;
+            if(box && box.classList.contains('suggestion-box')) {
+                box.style.display = 'none';
+            }
+        }
+    }
+
+    function renderList(quotes) {
+      document.getElementById('result-count').innerText = `共 ${quotes.length} 条`;
+      document.getElementById('quote-list').innerHTML = quotes.map(q => {
+        let dbTime = q.created_at; if (!dbTime.endsWith('Z')) dbTime += 'Z'; 
+        const dateObj = new Date(dbTime); const dateStr = dateObj.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const cleanNote = q.note ? q.note.replace(/[\r\n]+/g, ' ') : '';
+        return `<div class="quote-card" onclick="openInReview(${q.id})"><div class="card-actions"><button class="action-btn" onclick="startEdit(${q.id}); event.stopPropagation()">编辑</button><button class="action-btn delete" onclick="deleteQuote(${q.id}); event.stopPropagation()">删除</button></div><div class="q-content">${q.content}</div><div class="q-meta-row">${q.type ? `<div class="meta-group"><span class="meta-label">类型</span><span class="meta-value clickable" onclick="quickFilter('type', '${escapeAttr(q.type)}', event)">${q.type}</span></div>` : ''}${q.author ? `<div class="meta-group"><span class="meta-label">作者</span><span class="meta-value clickable" onclick="quickFilter('author', '${escapeAttr(q.author)}', event)">${q.author}</span></div>` : ''}${q.source ? `<div class="meta-group"><span class="meta-label">出处</span><span class="meta-value clickable" onclick="quickFilter('source', '${escapeAttr(q.source)}', event)">${q.source}</span></div>` : ''}${q.dynasty ? `<div class="meta-group"><span class="meta-label">朝代</span><span class="meta-value clickable" onclick="quickFilter('dynasty', '${escapeAttr(q.dynasty)}', event)">${q.dynasty}</span></div>` : ''}${q.nationality ? `<div class="meta-group"><span class="meta-label">国籍</span><span class="meta-value clickable" onclick="quickFilter('nationality', '${escapeAttr(q.nationality)}', event)">${q.nationality}</span></div>` : ''}${q.translation ? `<div class="meta-group"><span class="meta-label">译</span><span class="meta-value">${q.translation}</span></div>` : ''}</div>${cleanNote ? `<div class="q-note-block" style="display:block"><span class="q-note-label">随记</span>${cleanNote}</div>` : ''}<div class="q-footer"><div class="q-tags-area">${q.tags ? q.tags.split(/[,，]/).map(t => { const tag = t.trim(); if(!tag) return ''; const style = stringToColorStyle(tag); return `<span class="tag-pill" style="background:${style.bg}; color:${style.text}" onclick="quickFilter('tags', '${escapeAttr(tag)}', event)">${tag}</span>`; }).join('') : ''}</div><div class="q-date">${dateStr}</div></div></div>`;
+      }).join('');
+    }
+    
+    async function handleSearch() {
+        const type = document.getElementById('search-type').value;
+        const textVal = document.getElementById('main-search-input').value.trim();
+        const params = { mode: type === 'fulltext' ? 'fulltext' : 'single', field: type, keyword: textVal, searchTags: tagState.main };
+        const results = await window.api.advancedSearch(params);
+        renderList(results);
+    }
+    
+    function resetSearchUI() {
+        document.getElementById('main-search-input').value = ''; document.getElementById('search-type').value = 'fulltext'; tagState.main = []; renderTags('main');
+        document.querySelectorAll('#adv-panel input').forEach(i => i.value = ''); tagState.search = []; renderTags('search'); document.getElementById('adv-panel').classList.remove('open');
+    }
+    function resetSearch() { resetSearchUI(); loadQuotes(); }
+    function toggleAdvSearch() { document.getElementById('adv-panel').classList.toggle('open'); }
+    async function doAdvSearch() {
+        const params = {
+            mode: 'custom',
+            author: document.getElementById('adv-author').value, content: document.getElementById('adv-content').value,
+            type: document.getElementById('adv-type').value, source: document.getElementById('adv-source').value,
+            nationality: document.getElementById('adv-nationality').value, dynasty: document.getElementById('adv-dynasty').value,
+            tags: document.getElementById('adv-tags').value, searchTags: tagState.search
+        };
+        renderList(await window.api.advancedSearch(params));
+    }
+    function handleEnter(e, nextId) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById(nextId).focus(); } }
+    function resetForm() { document.querySelectorAll('#view-editor input, #view-editor textarea').forEach(i => i.value = ''); tagState.editor = []; renderTags('editor'); }
+    async function startEdit(id) {
+        switchView('editor'); const title = document.getElementById('form-title'); resetForm();
+        if (id) {
+            const all = await window.api.getQuotes(); const q = all.find(x => x.id === id); title.innerText = "编辑录入";
+            document.getElementById('inp-id').value = q.id; document.getElementById('inp-content').value = q.content;
+            document.getElementById('inp-author').value = q.author || ''; document.getElementById('inp-type').value = q.type || ''; 
+            document.getElementById('inp-source').value = q.source || ''; document.getElementById('inp-nationality').value = q.nationality || '';
+            document.getElementById('inp-dynasty').value = q.dynasty || ''; document.getElementById('inp-translation').value = q.translation || '';
+            document.getElementById('inp-note').value = q.note || ''; 
+            if (q.tags) { tagState.editor = q.tags.split(/[,，]/).map(t=>t.trim()).filter(t=>t); renderTags('editor'); }
+        } else { title.innerText = "新建录入"; }
+    }
+    async function saveQuote() {
+        const data = {
+            id: document.getElementById('inp-id').value, content: document.getElementById('inp-content').value,
+            author: document.getElementById('inp-author').value, type: document.getElementById('inp-type').value, 
+            source: document.getElementById('inp-source').value, nationality: document.getElementById('inp-nationality').value,
+            dynasty: document.getElementById('inp-dynasty').value, translation: document.getElementById('inp-translation').value,
+            tags: document.getElementById('inp-tags').value, note: document.getElementById('inp-note').value 
+        };
+        if (!data.content) return alert("内容不能为空");
+        if (data.id) await window.api.updateQuote(data); else await window.api.addQuote(data);
+        switchView('library');
+    }
+    async function deleteQuote(id) { if(confirm("确定删除？")) { await window.api.deleteQuote(id); loadQuotes(); } }
+    
+    // showSuggestions 改造以支持 Content textarea
+    async function showSuggestions(field, inputEl) {
+        const val = inputEl.value;
+        const box = inputEl.nextElementSibling; // 对于 field-wrap 结构，box 紧跟 input
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            if (val.length < 1) { if(box) box.style.display = 'none'; return; }
+            const list = await window.api.getSuggestions(field, val);
+            if (list.length > 0) {
+                // 如果是 content 字段，显示的可能比较长，需要截断吗？目前全显示
+                box.innerHTML = list.map(item => `<div class="suggestion-item" onclick="selectSuggestion('${field}', '${escapeAttr(item.value)}')">${item.value}</div>`).join('');
+                box.style.display = 'block';
+            } else {
+                box.style.display = 'none';
+            }
+        }, 300);
+    }
+
+    function selectSuggestion(field, val) {
+        if (field === 'tags') { 
+            // 标签不需要下拉框，所以这个分支其实不会被触发了(因为移除监听了)
+        } else if (field === 'content') {
+             // 句子内容被选中，填充并隐藏
+             document.getElementById('inp-content').value = val;
+             // 隐藏建议框
+             const box = document.getElementById('inp-content').nextElementSibling;
+             if(box) box.style.display = 'none';
+             // 再次检查重复
+             checkDuplicate(val);
+        } else { 
+            document.getElementById('inp-' + field).value = val; 
+        }
+        hideSuggestions();
+    }
+    function hideSuggestions() { setTimeout(() => document.querySelectorAll('.suggestion-box').forEach(b => b.style.display='none'), 200); }
+    async function checkDuplicate(content) { if(content.length < 5) return; const exists = await window.api.checkDuplicate(content); document.getElementById('dup-warning').style.display = exists ? 'block' : 'none'; }
+    let currentRandomId = null;
+    async function doReview() { const q = await window.api.getRandomQuote(currentRandomId); 
+        const card = document.getElementById('glass-card');
+        if(q) { 
+            currentRandomId = q.id; 
+            renderReviewCard(q); 
+        } else { 
+            document.getElementById('rev-content').innerText = "库里空空如也，快去录入吧！"; 
+            document.getElementById('rev-meta').innerText = ""; 
+            document.getElementById('rev-note-wrapper').style.display = 'none'; 
+            document.getElementById('rev-translation').style.display = 'none'; 
+            card.classList.add('initial-state');
+        } 
+    }
+    
+    // 滚动逻辑
+    const mainArea = document.querySelector('.main-area');
+    const backToTopBtn = document.getElementById('back-to-top');
+    mainArea.addEventListener('scroll', () => {
+        if (mainArea.scrollTop > 300) {
+            backToTopBtn.classList.add('visible');
+        } else {
+            backToTopBtn.classList.remove('visible');
+        }
+    });
+    function scrollToTop() {
+        mainArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.onload = function() { initSettings(); loadQuotes(); };
+  </script>
+</body>
+</html>

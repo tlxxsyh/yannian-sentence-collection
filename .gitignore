@@ -1,0 +1,25 @@
+# 依赖包 (体积巨大，不用传，别人下载代码后 npm install 即可)
+node_modules/
+
+# 打包生成的文件
+dist/
+release/
+
+# 本地数据库 (包含你的私人数据，且会自动生成，不传)
+*.db
+*.sqlite
+*.sqlite3
+
+# 系统缓存
+.DS_Store
+Thumbs.db
+
+# 环境变量
+.env
+
+# 编辑器配置
+.vscode/
+.idea/
+
+# 镜像
+.npmrc

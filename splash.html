@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f7fa; /* 与主软件背景色一致 */
+            font-family: "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-app-region: drag; /* 允许拖动窗口 */
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2980b9; /* 主题色 */
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(41, 128, 185, 0.2);
+            border-radius: 50%;
+            border-top-color: #2980b9;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">言念句子库</div>
+        <div class="loader"></div>
+        <div class="loading-text">正在整理书架...</div>
+    </div>
+</body>
+</html>

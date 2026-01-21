@@ -1,11 +1,3 @@
-<p align="center">
-  <a href="https://github.com/tlxxsyh/yannian-sentence-collection/releases/latest">
-    <img src="https://img.shields.io/github/v/release/tlxxsyh/yannian-sentence-collection?style=for-the-badge&logo=github&color=6e40c9" alt="Latest Release">
-  </a>
-  <a href="https://github.com/tlxxsyh/yannian-sentence-collection/releases">
-    <img src="https://img.shields.io/github/downloads/tlxxsyh/yannian-sentence-collection/total?style=for-the-badge&color=2ea44f" alt="Total Downloads">
-  </a>
-</p>
 ## 软件说明
 
 ### 软件定位

@@ -674,13 +674,27 @@
             background-color: rgba(127, 127, 127, 0.05);
         }
 
-        .reset-btn {
-            color: var(--text-sec);
-            font-size: 12px;
+        /* --- 新增：搜索清除按钮样式 (SVG 圆形叉号) --- */
+        .search-clear-btn {
+            color: var(--text-label); /* 默认淡一点 */
+            cursor: pointer;
+            padding: 0 8px;
+            font-size: 0; /* 消除文字影响 */
+            display: none; /* 默认隐藏 */
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+            height: 100%;
         }
-
-        .reset-btn:hover {
-            color: var(--danger);
+        
+        .search-clear-btn svg {
+            width: 18px; 
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .search-clear-btn:hover {
+            color: var(--text-sec); /* 悬停加深颜色，显得专业 */
         }
 
         .adv-panel {
@@ -1810,8 +1824,10 @@
                         <input type="text" id="main-search-input" class="tag-transparent-input"
                             placeholder="输入关键词 (可回车生成标签)" onkeydown="handleTagInput(event, 'main')"
                             oninput="handleSearch()">
+                        <span id="search-clear-btn" class="search-clear-btn" onclick="resetSearch()" title="清空搜索">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+                        </span>
                     </div>
-                    <button class="icon-btn reset-btn" onclick="resetSearch()">重置</button>
                     <button class="icon-btn adv-btn" onclick="toggleAdvSearch()">高级</button>
                 </div>
                 <div class="result-count-bar" id="result-count">加载中...</div>
@@ -1900,7 +1916,7 @@
                 <div class="input-row">
                     <div class="field-wrap"><label>作者</label><input id="inp-author"
                             onkeydown="handleEnter(event, 'inp-type')" oninput="showSuggestions('author', this)"
-                            onblur="hideSuggestions()">
+                            onblur="hideSuggestions()" placeholder="若不填则默认为佚名">
                         <div class="suggestion-box"></div>
                     </div>
                     <div class="field-wrap"><label>类型</label><input id="inp-type"
@@ -2037,6 +2053,14 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 </ul>
                 <h3>版本历史</h3>
                 <div class="timeline-container">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">2026年1月22日</div>
+                        <div class="timeline-content">
+                            <div class="timeline-version">v1.1.1</div>
+                            <div class="timeline-desc">美化界面，优化 csv 文件导入的时间判断逻辑。</div>
+                        </div>
+                    </div>
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
                         <div class="timeline-date">2026年1月22日</div>
@@ -2631,6 +2655,9 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             searchState.type = type;
             searchState.keyword = textVal;
             searchState.tags = [...tagState.main];
+            
+            // 更新清除按钮的可见性
+            updateSearchClearBtn();
 
             const params = { mode: type === 'fulltext' ? 'fulltext' : 'single', field: type, keyword: textVal, searchTags: tagState.main };
             const results = await window.api.advancedSearch(params);
@@ -2651,6 +2678,19 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             tagState.search = [];
             renderTags('search');
             document.getElementById('adv-panel').classList.remove('open');
+            
+            // 更新清除按钮的可见性
+            updateSearchClearBtn();
+        }
+        
+        // 新增：更新搜索清除按钮可见性的函数
+        function updateSearchClearBtn() {
+            const hasText = document.getElementById('main-search-input').value.length > 0;
+            const hasTags = tagState.main.length > 0;
+            const btn = document.getElementById('search-clear-btn');
+            if (btn) {
+                btn.style.display = (hasText || hasTags) ? 'flex' : 'none';
+            }
         }
 
         function resetSearch() { resetSearchUI(); loadQuotes(); }
@@ -2681,9 +2721,15 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             } else { title.innerText = "新建录入"; }
         }
         async function saveQuote() {
+            // 修改点：处理作者自动填充逻辑
+            let authorVal = document.getElementById('inp-author').value;
+            if (!authorVal || authorVal.trim() === '') {
+                authorVal = '佚名';
+            }
+            
             const data = {
                 id: document.getElementById('inp-id').value, content: document.getElementById('inp-content').value,
-                author: document.getElementById('inp-author').value, type: document.getElementById('inp-type').value,
+                author: authorVal, type: document.getElementById('inp-type').value,
                 source: document.getElementById('inp-source').value, nationality: document.getElementById('inp-nationality').value,
                 dynasty: document.getElementById('inp-dynasty').value, translation: document.getElementById('inp-translation').value,
                 tags: document.getElementById('inp-tags').value, note: document.getElementById('inp-note').value

@@ -98,7 +98,16 @@ function updateQuote(data) {
 }
 
 function getQuotes() {
-  return db.prepare('SELECT * FROM quotes ORDER BY created_at DESC').all();
+  // 移除 SQL 中的 ORDER BY，改为在 JS 中排序
+  const quotes = db.prepare('SELECT * FROM quotes').all();
+  
+  // 使用 JavaScript 的 Date 对象进行排序，完美解决格式不一致的问题
+  return quotes.sort((a, b) => {
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      // 倒序排列：新时间 (b) - 旧时间 (a)
+      return dateB - dateA;
+  });
 }
 
 function getRandomQuote(excludeId) {

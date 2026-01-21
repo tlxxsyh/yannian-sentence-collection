@@ -148,18 +148,36 @@ ipcMain.handle('import-data', async () => {
       }
 
       // 补全缺失字段，防止数据库报错
-      const sanitizedRecords = records.map(r => ({
-          content: r.content,
-          author: r.author || '',
-          source: r.source || '',
-          type: r.type || '',
-          nationality: r.nationality || '',
-          dynasty: r.dynasty || '',
-          translation: r.translation || '',
-          tags: r.tags || '',
-          note: r.note || '',
-          created_at: r.createdat || new Date().toISOString()
-      }));
+      const sanitizedRecords = records.map(r => {
+          // 尝试标准化日期格式
+          let validDate;
+          try {
+              // 如果有日期字符串，尝试转换成标准 ISO 格式 (YYYY-MM-DDTHH:mm:ss.sssZ)
+              if (r.createdat) {
+                  const d = new Date(r.createdat);
+                  // 检查是否为有效日期
+                  if (!isNaN(d.getTime())) {
+                      validDate = d.toISOString(); 
+                  }
+              }
+          } catch (e) {
+              // 忽略日期转换错误
+          }
+
+          return {
+              content: r.content,
+              author: r.author || '',
+              source: r.source || '',
+              type: r.type || '',
+              nationality: r.nationality || '',
+              dynasty: r.dynasty || '',
+              translation: r.translation || '',
+              tags: r.tags || '',
+              note: r.note || '',
+              // 使用标准化后的日期，或者当前时间
+              created_at: validDate || new Date().toISOString()
+          };
+      });
 
       const count = db.importBulk(sanitizedRecords);
       return { success: true, message: `成功导入 ${count} 条数据！` };

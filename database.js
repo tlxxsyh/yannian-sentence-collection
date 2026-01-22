@@ -6,25 +6,29 @@ const fs = require('fs');
 // --- 路径处理逻辑 ---
 let dbPath;
 
-// 获取用户数据目录 (兼容开发环境和打包环境)
 if (app.isPackaged) {
-    // 生产环境：C:\Users\用户名\AppData\Roaming\言念句子库\inkwell.db
-    // 这样可以保证数据库可读写，且更新软件数据不丢失
     const userDataPath = app.getPath('userData');
-    
-    // 确保目录存在
     if (!fs.existsSync(userDataPath)) {
         fs.mkdirSync(userDataPath, { recursive: true });
     }
-    
     dbPath = path.join(userDataPath, 'inkwell.db');
 } else {
-    // 开发环境：直接保存在项目根目录
     dbPath = path.join(__dirname, 'inkwell.db');
 }
 
 console.log("当前数据库路径:", dbPath);
 const db = new Database(dbPath);
+
+// --- 核心工具：统一时间格式化 (2026/1/22 10:51:15) ---
+function getNowString(d = new Date()) {
+    const Y = d.getFullYear();
+    const M = d.getMonth() + 1; // 月份不补0
+    const D = d.getDate();      // 日期不补0
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    const s = d.getSeconds().toString().padStart(2, '0');
+    return `${Y}/${M}/${D} ${h}:${m}:${s}`;
+}
 
 // 1. 初始化表结构
 db.exec(`
@@ -39,9 +43,10 @@ db.exec(`
     translation TEXT,
     tags TEXT,
     note TEXT, 
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT
   )
 `);
+// 注意：移除了 DATETIME DEFAULT CURRENT_TIMESTAMP，因为我们要手动控制格式
 
 // --- 预设数据注入 ---
 const count = db.prepare('SELECT count(*) as c FROM quotes').get().c;
@@ -56,13 +61,14 @@ if (count === 0) {
             type: "散文",
             tags: "青春,年岁,理想",
             note: "我很喜欢这句话，也送给使用这个软件的你",
-            translation: "年岁增长，并非衰老，理想丢弃，方坠暮年。"
+            translation: "年岁增长，并非衰老，理想丢弃，方坠暮年。",
+            created_at: getNowString() // 使用统一时间
         }
     ];
 
     const insert = db.prepare(`
-        INSERT INTO quotes (content, author, source, type, nationality, dynasty, translation, tags, note)
-        VALUES (@content, @author, @source, @type, @nationality, @dynasty, @translation, @tags, @note)
+        INSERT INTO quotes (content, author, source, type, nationality, dynasty, translation, tags, note, created_at)
+        VALUES (@content, @author, @source, @type, @nationality, @dynasty, @translation, @tags, @note, @created_at)
     `);
 
     const importTransaction = db.transaction((quotes) => {
@@ -75,9 +81,12 @@ if (count === 0) {
 
 // 2. 基础 CRUD 操作
 function addQuote(data) {
+  // 核心修改：手动生成统一格式的 created_at
+  const now = getNowString(); 
+  
   const stmt = db.prepare(`
-    INSERT INTO quotes (content, author, source, type, nationality, dynasty, translation, tags, note)
-    VALUES (@content, @author, @source, @type, @nationality, @dynasty, @translation, @tags, @note)
+    INSERT INTO quotes (content, author, source, type, nationality, dynasty, translation, tags, note, created_at)
+    VALUES (@content, @author, @source, @type, @nationality, @dynasty, @translation, @tags, @note, '${now}')
   `);
   return stmt.run(data);
 }
@@ -98,14 +107,11 @@ function updateQuote(data) {
 }
 
 function getQuotes() {
-  // 移除 SQL 中的 ORDER BY，改为在 JS 中排序
   const quotes = db.prepare('SELECT * FROM quotes').all();
-  
-  // 使用 JavaScript 的 Date 对象进行排序，完美解决格式不一致的问题
+  // 排序逻辑保持不变，new Date() 可以识别我们统一后的格式
   return quotes.sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
-      // 倒序排列：新时间 (b) - 旧时间 (a)
       return dateB - dateA;
   });
 }
@@ -151,7 +157,6 @@ function advancedSearch(params) {
     let sql = 'SELECT * FROM quotes WHERE 1=1';
     const values = {};
 
-    // 标签过滤
     if (params.searchTags) {
         let tags = [];
         if (Array.isArray(params.searchTags)) tags = params.searchTags;
@@ -169,7 +174,6 @@ function advancedSearch(params) {
         }
     }
 
-    // 关键词过滤
     if (params.keyword && params.keyword.trim() !== '') {
         const kw = params.keyword.trim();
         if (params.mode === 'fulltext') {
@@ -181,7 +185,6 @@ function advancedSearch(params) {
         }
     }
     
-    // 自定义组合
     if (params.mode === 'custom') {
         if (params.content) { sql += ' AND content LIKE @content'; values.content = `%${params.content}%`; }
         if (params.author) { sql += ' AND author LIKE @author'; values.author = `%${params.author}%`; }
@@ -235,8 +238,10 @@ function getCategoryStats(field) {
     }
 }
 
+// 导出工具函数供 main.js 使用
 module.exports = { 
     addQuote, getQuotes, getRandomQuote, deleteQuote, updateQuote, 
     getSuggestions, checkContentExists, advancedSearch,
-    importBulk, clearAllQuotes, getCategoryStats 
+    importBulk, clearAllQuotes, getCategoryStats,
+    getNowString // 导出给main.js导入时使用
 };

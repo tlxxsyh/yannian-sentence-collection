@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const db = require('./database.js');
-// 引入 CSV 处理库
 const { parse } = require('csv-parse/sync'); 
 const { stringify } = require('csv-stringify/sync');
 
@@ -33,7 +32,6 @@ function createMainWindow() {
     show: false,
     backgroundColor: '#f5f7fa',
     icon: path.join(__dirname, 'assets/icon.ico'),
-    // 隐藏菜单栏
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -91,7 +89,6 @@ ipcMain.handle('export-data', async () => {
 
   if (filePath) {
     try {
-      // 导出时保留 Title Case (首字母大写) 的表头，为了美观
       const csvContent = stringify(quotes, { 
           header: true,
           columns: [
@@ -107,7 +104,6 @@ ipcMain.handle('export-data', async () => {
             { key: 'created_at', header: 'CreatedAt' }
           ] 
       });
-      // 写入 BOM 头，防止 Excel 打开乱码
       fs.writeFileSync(filePath, '\uFEFF' + csvContent, 'utf8');
       return { success: true, message: `成功导出 ${quotes.length} 条数据` };
     } catch (err) {
@@ -117,7 +113,7 @@ ipcMain.handle('export-data', async () => {
   return { success: false, message: "取消导出" };
 });
 
-// --- 导入功能 (核心修复) ---
+// --- 导入功能 ---
 ipcMain.handle('import-data', async () => {
   const { filePaths } = await dialog.showOpenDialog(mainWindow, {
     title: '导入句子数据',
@@ -129,39 +125,35 @@ ipcMain.handle('import-data', async () => {
     try {
       const fileContent = fs.readFileSync(filePaths[0], 'utf8');
       
-      // 核心修复逻辑：
-      // 1. bom: true -> 自动去除 Excel 的 BOM 头
-      // 2. columns: x => x.toLowerCase() -> 自动将 Content 转为 content，匹配数据库字段
       const records = parse(fileContent, {
         columns: header => header.map(column => column.trim().toLowerCase()), 
         bom: true, 
         skip_empty_lines: true,
         trim: true,
-        relax_quotes: true // 允许稍微不规范的引号
+        relax_quotes: true
       });
 
       if (records.length === 0) return { success: false, message: "文件中没有有效数据" };
 
-      // 验证关键字段是否存在
       if (!records[0].hasOwnProperty('content')) {
           return { success: false, message: "导入失败：找不到 'Content' 列，请检查表头拼写。" };
       }
 
-      // 补全缺失字段，防止数据库报错
       const sanitizedRecords = records.map(r => {
-          // 尝试标准化日期格式
-          let validDate;
-          try {
-              // 如果有日期字符串，尝试转换成标准 ISO 格式 (YYYY-MM-DDTHH:mm:ss.sssZ)
-              if (r.createdat) {
-                  const d = new Date(r.createdat);
-                  // 检查是否为有效日期
-                  if (!isNaN(d.getTime())) {
-                      validDate = d.toISOString(); 
-                  }
+          // 核心修改：统一时间格式逻辑
+          let validDateStr;
+          
+          if (r.createdat) {
+              const d = new Date(r.createdat);
+              if (!isNaN(d.getTime())) {
+                  // 如果 CSV 里有时间，将其转为我们要的 2026/1/22 10:51:15 格式
+                  validDateStr = db.getNowString(d); 
               }
-          } catch (e) {
-              // 忽略日期转换错误
+          }
+          
+          // 如果没有有效时间，使用当前时间
+          if (!validDateStr) {
+              validDateStr = db.getNowString();
           }
 
           return {
@@ -174,8 +166,7 @@ ipcMain.handle('import-data', async () => {
               translation: r.translation || '',
               tags: r.tags || '',
               note: r.note || '',
-              // 使用标准化后的日期，或者当前时间
-              created_at: validDate || new Date().toISOString()
+              created_at: validDateStr
           };
       });
 

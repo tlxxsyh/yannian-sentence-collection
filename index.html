@@ -184,6 +184,17 @@
             margin-top: 5px;
             font-weight: 500;
         }
+        
+        /* 新增：版本号显示样式 */
+        .logo-version {
+            font-size: 12px;
+            color: var(--text-sec);
+            margin-top: 8px;
+            opacity: 0.6;
+            font-family: var(--font-custom);
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
 
         .nav-btn {
             position: relative;
@@ -1729,6 +1740,7 @@
         <div class="logo-container">
             <div class="logo-title">言念句子库</div>
             <div class="logo-subtitle">言念君子，温其如玉</div>
+            <div class="logo-version">v1.2.0</div>
         </div>
 
         <button class="nav-btn active" onclick="switchView('library')">全部馆藏</button>
@@ -2053,6 +2065,14 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 </ul>
                 <h3>版本历史</h3>
                 <div class="timeline-container">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">2026年1月22日</div>
+                        <div class="timeline-content">
+                            <div class="timeline-version">v1.2.0</div>
+                            <div class="timeline-desc">底层逻辑重构：取消了列表显示的300条数量限制；统一了全软件的时间格式标准，彻底修复了导入数据后的排序错乱问题。</div>
+                        </div>
+                    </div>
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
                         <div class="timeline-date">2026年1月22日</div>
@@ -2575,9 +2595,15 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             const listEl = document.getElementById('quote-list');
             document.getElementById('result-count').innerText = `共 ${quotes.length} 条`;
 
-            // 修改：不再限制显示数量，直接显示所有句子
-            const displayQuotes = quotes;
-            
+            const MAX_DISPLAY = 300;
+            let displayQuotes = quotes;
+            let limitTip = "";
+
+            if (quotes.length > MAX_DISPLAY) {
+                displayQuotes = quotes.slice(0, MAX_DISPLAY);
+                limitTip = `<div style="text-align:center; padding:20px; color:var(--text-sec); font-size:12px;">为了流畅体验，仅展示最近 ${MAX_DISPLAY} 条。<br>请使用搜索功能查找更多。</div>`;
+            }
+
             const html = displayQuotes.map(q => {
                 let dbTime = q.created_at;
                 if (dbTime && !dbTime.endsWith('Z')) dbTime += 'Z';
@@ -2615,7 +2641,7 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
         </div>`;
             }).join('');
 
-            listEl.innerHTML = html; // 移除了 limitTip
+            listEl.innerHTML = html + limitTip;
 
             if (targetId) {
                 setTimeout(() => {

@@ -2575,15 +2575,9 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             const listEl = document.getElementById('quote-list');
             document.getElementById('result-count').innerText = `共 ${quotes.length} 条`;
 
-            const MAX_DISPLAY = 300;
-            let displayQuotes = quotes;
-            let limitTip = "";
-
-            if (quotes.length > MAX_DISPLAY) {
-                displayQuotes = quotes.slice(0, MAX_DISPLAY);
-                limitTip = `<div style="text-align:center; padding:20px; color:var(--text-sec); font-size:12px;">为了流畅体验，仅展示最近 ${MAX_DISPLAY} 条。<br>请使用搜索功能查找更多。</div>`;
-            }
-
+            // 修改：不再限制显示数量，直接显示所有句子
+            const displayQuotes = quotes;
+            
             const html = displayQuotes.map(q => {
                 let dbTime = q.created_at;
                 if (dbTime && !dbTime.endsWith('Z')) dbTime += 'Z';
@@ -2621,7 +2615,7 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
         </div>`;
             }).join('');
 
-            listEl.innerHTML = html + limitTip;
+            listEl.innerHTML = html; // 移除了 limitTip
 
             if (targetId) {
                 setTimeout(() => {

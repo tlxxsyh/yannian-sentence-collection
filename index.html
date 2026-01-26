@@ -185,7 +185,6 @@
             font-weight: 500;
         }
         
-        /* 新增：版本号显示样式 */
         .logo-version {
             font-size: 12px;
             color: var(--text-sec);
@@ -1740,7 +1739,7 @@
         <div class="logo-container">
             <div class="logo-title">言念句子库</div>
             <div class="logo-subtitle">言念君子，温其如玉</div>
-            <div class="logo-version">v1.2.0</div>
+            <div class="logo-version">v1.2.1</div>
         </div>
 
         <button class="nav-btn active" onclick="switchView('library')">全部馆藏</button>
@@ -2067,6 +2066,14 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 <div class="timeline-container">
                     <div class="timeline-item">
                         <div class="timeline-dot"></div>
+                        <div class="timeline-date">2026年1月26日</div>
+                        <div class="timeline-content">
+                            <div class="timeline-version">v1.2.1</div>
+                            <div class="timeline-desc">修复 Bug：解决了在“分类索引”页面点击分类卡片无法跳转并加载搜索结果的问题。</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
                         <div class="timeline-date">2026年1月22日</div>
                         <div class="timeline-content">
                             <div class="timeline-version">v1.2.0</div>
@@ -2369,13 +2376,26 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
         }
 
         function jumpToSearch(field, value) {
-            // 重置搜索状态，开始新的搜索
-            resetSearchUI(); // 清空旧状态
+            // 1. 重置搜索状态 (UI和State)
+            // 手动清理 DOM，而不调用 resetSearchUI 以免把 active 设为 false
+            // 或者：resetSearchUI 后立即覆盖
+            resetSearchUI(); 
 
+            // 2. 根据点击的内容，设置新的搜索参数
+            // 强制标记 active = true，这样 switchView 不会加载 loadQuotes
+            searchState.active = true; 
+            
             if (field === 'tags') {
                 document.getElementById('search-type').value = 'tags';
                 tagState.main = [value];
-                renderTags('main');
+                // renderTags('main') 会触发 handleSearch，但这其实没问题，因为 searchState.active 已经是 true
+                // 我们在 switchView 之前调用 renderTags 只是为了更新 UI
+                renderTags('main'); 
+                
+                // 为了保险，手动更新 searchState 对应字段
+                searchState.type = 'tags';
+                searchState.keyword = '';
+                searchState.tags = [value];
             } else {
                 const select = document.getElementById('search-type');
                 let found = false;
@@ -2386,10 +2406,20 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 }
                 if (!found) select.value = 'fulltext';
                 document.getElementById('main-search-input').value = value;
+                
+                // 手动更新 searchState，供 switchView 使用
+                searchState.type = document.getElementById('search-type').value;
+                searchState.keyword = value;
+                searchState.tags = [];
             }
+            
+            // 更新 UI 状态（比如叉号）
+            updateSearchClearBtn();
 
+            // 3. 切换视图
+            // switchView 会读取 searchState.active (true) -> 恢复 UI -> 执行 handleSearch
+            // 这样就只会触发一次正确的搜索，而不会被 loadQuotes 覆盖
             switchView('library');
-            handleSearch(); // 执行搜索
         }
 
         function escapeAttr(str) { if (!str) return ''; return str.toString().replace(/'/g, "\\'"); }

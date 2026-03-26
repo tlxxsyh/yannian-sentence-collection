@@ -184,7 +184,7 @@
             margin-top: 5px;
             font-weight: 500;
         }
-        
+
         .logo-version {
             font-size: 12px;
             color: var(--text-sec);
@@ -686,25 +686,29 @@
 
         /* --- 新增：搜索清除按钮样式 (SVG 圆形叉号) --- */
         .search-clear-btn {
-            color: var(--text-label); /* 默认淡一点 */
+            color: var(--text-label);
+            /* 默认淡一点 */
             cursor: pointer;
             padding: 0 8px;
-            font-size: 0; /* 消除文字影响 */
-            display: none; /* 默认隐藏 */
+            font-size: 0;
+            /* 消除文字影响 */
+            display: none;
+            /* 默认隐藏 */
             align-items: center;
             justify-content: center;
             transition: color 0.2s;
             height: 100%;
         }
-        
+
         .search-clear-btn svg {
-            width: 18px; 
+            width: 18px;
             height: 18px;
             fill: currentColor;
         }
-        
+
         .search-clear-btn:hover {
-            color: var(--text-sec); /* 悬停加深颜色，显得专业 */
+            color: var(--text-sec);
+            /* 悬停加深颜色，显得专业 */
         }
 
         .adv-panel {
@@ -1776,14 +1780,16 @@
                 <div style="margin-bottom: 15px;">
                     <div
                         style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sec); margin-bottom:5px;">
-                        <span>不透明度</span><span id="alpha-val">70%</span></div><input type="range" min="10" max="100"
-                        value="70" class="range-slider" id="alpha-slider" oninput="updateGlassAlpha(this.value)">
+                        <span>不透明度</span><span id="alpha-val">70%</span>
+                    </div><input type="range" min="10" max="100" value="70" class="range-slider" id="alpha-slider"
+                        oninput="updateGlassAlpha(this.value)">
                 </div>
                 <div>
                     <div
                         style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sec); margin-bottom:5px;">
-                        <span>模糊度</span><span id="blur-val">20px</span></div><input type="range" min="0" max="50"
-                        value="20" class="range-slider" id="blur-slider" oninput="updateGlassBlur(this.value)">
+                        <span>模糊度</span><span id="blur-val">20px</span>
+                    </div><input type="range" min="0" max="50" value="20" class="range-slider" id="blur-slider"
+                        oninput="updateGlassBlur(this.value)">
                 </div>
             </div>
             <div class="setting-item"><span class="setting-label">主题强调色</span>
@@ -1836,7 +1842,10 @@
                             placeholder="输入关键词 (可回车生成标签)" onkeydown="handleTagInput(event, 'main')"
                             oninput="handleSearch()">
                         <span id="search-clear-btn" class="search-clear-btn" onclick="resetSearch()" title="清空搜索">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" />
+                            </svg>
                         </span>
                     </div>
                     <button class="icon-btn adv-btn" onclick="toggleAdvSearch()">高级</button>
@@ -2379,19 +2388,19 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             // 1. 重置搜索状态 (UI和State)
             // 手动清理 DOM，而不调用 resetSearchUI 以免把 active 设为 false
             // 或者：resetSearchUI 后立即覆盖
-            resetSearchUI(); 
+            resetSearchUI();
 
             // 2. 根据点击的内容，设置新的搜索参数
             // 强制标记 active = true，这样 switchView 不会加载 loadQuotes
-            searchState.active = true; 
-            
+            searchState.active = true;
+
             if (field === 'tags') {
                 document.getElementById('search-type').value = 'tags';
                 tagState.main = [value];
                 // renderTags('main') 会触发 handleSearch，但这其实没问题，因为 searchState.active 已经是 true
                 // 我们在 switchView 之前调用 renderTags 只是为了更新 UI
-                renderTags('main'); 
-                
+                renderTags('main');
+
                 // 为了保险，手动更新 searchState 对应字段
                 searchState.type = 'tags';
                 searchState.keyword = '';
@@ -2406,13 +2415,13 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 }
                 if (!found) select.value = 'fulltext';
                 document.getElementById('main-search-input').value = value;
-                
+
                 // 手动更新 searchState，供 switchView 使用
                 searchState.type = document.getElementById('search-type').value;
                 searchState.keyword = value;
                 searchState.tags = [];
             }
-            
+
             // 更新 UI 状态（比如叉号）
             updateSearchClearBtn();
 
@@ -2621,20 +2630,13 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
         }
 
         // --- 优化：渲染列表函数 (支持跳转滚动) ---
+        // --- 优化：渲染列表函数 (支持跳转滚动) ---
         function renderList(quotes, targetId = null) {
             const listEl = document.getElementById('quote-list');
             document.getElementById('result-count').innerText = `共 ${quotes.length} 条`;
 
-            const MAX_DISPLAY = 300;
-            let displayQuotes = quotes;
-            let limitTip = "";
-
-            if (quotes.length > MAX_DISPLAY) {
-                displayQuotes = quotes.slice(0, MAX_DISPLAY);
-                limitTip = `<div style="text-align:center; padding:20px; color:var(--text-sec); font-size:12px;">为了流畅体验，仅展示最近 ${MAX_DISPLAY} 条。<br>请使用搜索功能查找更多。</div>`;
-            }
-
-            const html = displayQuotes.map(q => {
+            // 直接使用传入的全部 quotes 数据进行渲染
+            const html = quotes.map(q => {
                 let dbTime = q.created_at;
                 if (dbTime && !dbTime.endsWith('Z')) dbTime += 'Z';
                 const dateObj = new Date(dbTime);
@@ -2642,36 +2644,37 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
                 const cleanNote = q.note ? q.note.replace(/[\r\n]+/g, ' ') : '';
 
                 return `
-        <div id="quote-card-${q.id}" class="quote-card" onclick="openInReview(${q.id})">
-            <div class="card-actions">
-                <button class="action-btn" onclick="startEdit(${q.id}); event.stopPropagation()">编辑</button>
-                <button class="action-btn delete" onclick="deleteQuote(${q.id}); event.stopPropagation()">删除</button>
-            </div>
-            <div class="q-content">${q.content}</div>
-            <div class="q-meta-row">
-                ${q.type ? `<div class="meta-group"><span class="meta-label">类型</span><span class="meta-value clickable" onclick="quickFilter('type', '${escapeAttr(q.type)}', event)">${q.type}</span></div>` : ''}
-                ${q.author ? `<div class="meta-group"><span class="meta-label">作者</span><span class="meta-value clickable" onclick="quickFilter('author', '${escapeAttr(q.author)}', event)">${q.author}</span></div>` : ''}
-                ${q.source ? `<div class="meta-group"><span class="meta-label">出处</span><span class="meta-value clickable" onclick="quickFilter('source', '${escapeAttr(q.source)}', event)">${q.source}</span></div>` : ''}
-                ${q.dynasty ? `<div class="meta-group"><span class="meta-label">朝代</span><span class="meta-value clickable" onclick="quickFilter('dynasty', '${escapeAttr(q.dynasty)}', event)">${q.dynasty}</span></div>` : ''}
-                ${q.nationality ? `<div class="meta-group"><span class="meta-label">国籍</span><span class="meta-value clickable" onclick="quickFilter('nationality', '${escapeAttr(q.nationality)}', event)">${q.nationality}</span></div>` : ''}
-                ${q.translation ? `<div class="meta-group"><span class="meta-label">译</span><span class="meta-value">${q.translation}</span></div>` : ''}
-            </div>
-            ${cleanNote ? `<div class="q-note-block" style="display:block"><span class="q-note-label">随记</span>${cleanNote}</div>` : ''}
-            <div class="q-footer">
-                <div class="q-tags-area">
-                    ${q.tags ? q.tags.split(/[,，]/).map(t => {
+<div id="quote-card-${q.id}" class="quote-card" onclick="openInReview(${q.id})">
+    <div class="card-actions">
+        <button class="action-btn" onclick="startEdit(${q.id}); event.stopPropagation()">编辑</button>
+        <button class="action-btn delete" onclick="deleteQuote(${q.id}); event.stopPropagation()">删除</button>
+    </div>
+    <div class="q-content">${q.content}</div>
+    <div class="q-meta-row">
+        ${q.type ? `<div class="meta-group"><span class="meta-label">类型</span><span class="meta-value clickable" onclick="quickFilter('type', '${escapeAttr(q.type)}', event)">${q.type}</span></div>` : ''}
+        ${q.author ? `<div class="meta-group"><span class="meta-label">作者</span><span class="meta-value clickable" onclick="quickFilter('author', '${escapeAttr(q.author)}', event)">${q.author}</span></div>` : ''}
+        ${q.source ? `<div class="meta-group"><span class="meta-label">出处</span><span class="meta-value clickable" onclick="quickFilter('source', '${escapeAttr(q.source)}', event)">${q.source}</span></div>` : ''}
+        ${q.dynasty ? `<div class="meta-group"><span class="meta-label">朝代</span><span class="meta-value clickable" onclick="quickFilter('dynasty', '${escapeAttr(q.dynasty)}', event)">${q.dynasty}</span></div>` : ''}
+        ${q.nationality ? `<div class="meta-group"><span class="meta-label">国籍</span><span class="meta-value clickable" onclick="quickFilter('nationality', '${escapeAttr(q.nationality)}', event)">${q.nationality}</span></div>` : ''}
+        ${q.translation ? `<div class="meta-group"><span class="meta-label">译</span><span class="meta-value">${q.translation}</span></div>` : ''}
+    </div>
+    ${cleanNote ? `<div class="q-note-block" style="display:block"><span class="q-note-label">随记</span>${cleanNote}</div>` : ''}
+    <div class="q-footer">
+        <div class="q-tags-area">
+            ${q.tags ? q.tags.split(/[,，]/).map(t => {
                     const tag = t.trim();
                     if (!tag) return '';
                     const style = stringToColorStyle(tag);
                     return `<span class="tag-pill" style="background:${style.bg}; color:${style.text}" onclick="quickFilter('tags', '${escapeAttr(tag)}', event)">${tag}</span>`;
                 }).join('') : ''}
-                </div>
-                <div class="q-date">${dateStr}</div>
-            </div>
-        </div>`;
+        </div>
+        <div class="q-date">${dateStr}</div>
+    </div>
+</div>`;
             }).join('');
 
-            listEl.innerHTML = html + limitTip;
+            // 移除 limitTip，直接渲染 html
+            listEl.innerHTML = html;
 
             if (targetId) {
                 setTimeout(() => {
@@ -2705,7 +2708,7 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             searchState.type = type;
             searchState.keyword = textVal;
             searchState.tags = [...tagState.main];
-            
+
             // 更新清除按钮的可见性
             updateSearchClearBtn();
 
@@ -2728,11 +2731,11 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             tagState.search = [];
             renderTags('search');
             document.getElementById('adv-panel').classList.remove('open');
-            
+
             // 更新清除按钮的可见性
             updateSearchClearBtn();
         }
-        
+
         // 新增：更新搜索清除按钮可见性的函数
         function updateSearchClearBtn() {
             const hasText = document.getElementById('main-search-input').value.length > 0;
@@ -2776,7 +2779,7 @@ To be, or not to be, that is the question.,莎士比亚,台词,哈姆雷特,,英
             if (!authorVal || authorVal.trim() === '') {
                 authorVal = '佚名';
             }
-            
+
             const data = {
                 id: document.getElementById('inp-id').value, content: document.getElementById('inp-content').value,
                 author: authorVal, type: document.getElementById('inp-type').value,
